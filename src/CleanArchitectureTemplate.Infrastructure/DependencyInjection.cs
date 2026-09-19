@@ -1,10 +1,11 @@
 using CleanArchitectureTemplate.Application.Common.Interfaces;
-using CleanArchitectureTemplate.Domain.UnitOfWork;
 using CleanArchitectureTemplate.Domain.RepositoryInterfaces;
+using CleanArchitectureTemplate.Domain.UnitOfWork;
 using CleanArchitectureTemplate.Infrastructure.Context;
 using CleanArchitectureTemplate.Infrastructure.Identity;
 using CleanArchitectureTemplate.Infrastructure.Repositories;
 using CleanArchitectureTemplate.Infrastructure.Services;
+using CleanArchitectureTemplate.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +77,9 @@ public static class DependencyInjection
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<ITokenGenerator, TokenGenerator>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+        services.AddTransient<IEmailService, EmailService>();
 
         return services;
     }

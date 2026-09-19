@@ -39,6 +39,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

@@ -4,4 +4,5 @@ public sealed record RegisterRequestDto(
     string FullName,
     string Email,
     string Password,
-    string ConfirmPassword);
+    string ConfirmPassword,
+    string OtpCode);

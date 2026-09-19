@@ -1,6 +1,7 @@
 using CleanArchitectureTemplate.API.Controllers.Base;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Login;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Logout;
+using CleanArchitectureTemplate.Application.Features.Auth.Commands.OTP;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.RefreshToken;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Register;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.UpdateProfile;
@@ -31,6 +32,10 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto) =>
         FromResult(await Mediator.Send(new LogoutCommand(dto)));
+
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromBody] string Email) =>
+        FromResult(await Mediator.Send(new SendRegistrationOtpCommand(Email)));
 
     [HttpGet("me")]
     [Authorize]
