@@ -20,8 +20,6 @@ public sealed class UpdateProfileHandler(
         var result = await identityService.UpdateProfileAsync(
             userId,
             request.Request.FullName,
-            request.Request.Email,
-            request.Request.Email,
             cancellationToken);
 
         if (!result.Succeeded)

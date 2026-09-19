@@ -9,8 +9,5 @@ public sealed class UpdateProfileValidator : AbstractValidator<UpdateProfileComm
     {
         RuleFor(x => x.Request.FullName)
             .NotEmpty().MaximumLength(100);
-
-        RuleFor(x => x.Request.Email)
-            .NotEmpty().EmailAddress().MaximumLength(256);
     }
 }

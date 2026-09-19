@@ -47,7 +47,5 @@ public interface IIdentityService
     Task<IdentityOperationResult> UpdateProfileAsync(
         int userId,
         string fullName,
-        string userName,
-        string email,
         CancellationToken cancellationToken = default);
 }

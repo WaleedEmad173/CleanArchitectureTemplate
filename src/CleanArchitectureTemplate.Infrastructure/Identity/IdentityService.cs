@@ -48,7 +48,8 @@ public sealed class IdentityService(
         {
             FullName = fullName.Trim(),
             UserName = userName.Trim(),
-            Email = email.Trim()
+            Email = email.Trim(),
+            EmailConfirmed = true,
         };
 
         var result = await userManager.CreateAsync(user, password);
@@ -105,8 +106,6 @@ public sealed class IdentityService(
     public async Task<IdentityOperationResult> UpdateProfileAsync(
         int userId,
         string fullName,
-        string userName,
-        string email,
         CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByIdAsync(userId.ToString());
@@ -114,23 +113,7 @@ public sealed class IdentityService(
         if (user is null)
             return new IdentityOperationResult(false, ["User not found."]);
 
-        if (!string.Equals(user.UserName, userName, StringComparison.OrdinalIgnoreCase) &&
-            await UserNameExistsAsync(userName, cancellationToken))
-        {
-            return new IdentityOperationResult(false, ["Username is already registered."]);
-        }
-
-        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase) &&
-            await EmailExistsAsync(email, cancellationToken))
-        {
-            return new IdentityOperationResult(false, ["Email is already registered."]);
-        }
-
         user.FullName = fullName.Trim();
-        user.UserName = userName.Trim();
-        user.Email = email.Trim();
-        user.NormalizedUserName = userManager.NormalizeName(user.UserName);
-        user.NormalizedEmail = userManager.NormalizeEmail(user.Email);
 
         var result = await userManager.UpdateAsync(user);
 
