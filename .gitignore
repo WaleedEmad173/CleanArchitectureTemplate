@@ -7,3 +7,4 @@ appsettings.Local.json
 *.db
 *.db-shm
 *.db-wal
+/src/CleanArchitectureTemplate.API/appsettings.json
