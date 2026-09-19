@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Waleed Emad",
+  "classifications": ["Web", "WebAPI", "Clean Architecture"],
+  "name": "Waleed Clean Architecture API",
+  "identity": "Waleed.CleanArch.Template",
+  "shortName": "waleed-clean-api",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "CleanArchitectureTemplate", 
+  "preferNameDirectory": true
+}

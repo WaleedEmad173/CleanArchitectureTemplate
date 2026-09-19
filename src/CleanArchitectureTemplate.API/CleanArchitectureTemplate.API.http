@@ -1,0 +1,14 @@
+@CleanArchitectureTemplate.API_HostAddress = https://localhost:7000
+
+POST {{CleanArchitectureTemplate.API_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Admin User",
+  "userName": "admin",
+  "email": "admin@example.com",
+  "password": "Password1",
+  "confirmPassword": "Password1"
+}
+
+###
