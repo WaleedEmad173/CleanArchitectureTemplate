@@ -35,12 +35,12 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
         FromResult(await Mediator.Send(new LogoutCommand(dto)));
 
     [HttpPost("send-otp")]
-    public async Task<IActionResult> SendOtp([FromBody] string Email) =>
-        FromResult(await Mediator.Send(new SendRegistrationOtpCommand(Email)));
+    public async Task<IActionResult> SendOtp([FromBody] OTPRequestDto dto) =>
+        FromResult(await Mediator.Send(new SendRegistrationOtpCommand(dto)));
 
     [HttpPost("google-login")]
-    public async Task<IActionResult> GoogleLogin([FromBody] string idToken) =>
-        FromResult(await Mediator.Send(new GoogleLoginCommand(idToken)));
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto) =>
+        FromResult(await Mediator.Send(new GoogleLoginCommand(dto)));
 
     [HttpGet("me")]
     [Authorize]

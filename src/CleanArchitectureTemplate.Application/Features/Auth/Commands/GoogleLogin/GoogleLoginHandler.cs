@@ -24,7 +24,7 @@ namespace CleanArchitectureTemplate.Application.Features.Auth.Commands.GoogleLog
 
             try
             {
-                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, new GoogleJsonWebSignature.ValidationSettings
+                payload = await GoogleJsonWebSignature.ValidateAsync(request.Request.IdToken, new GoogleJsonWebSignature.ValidationSettings
                 {
                     Audience = new[] { clientId }
                 });

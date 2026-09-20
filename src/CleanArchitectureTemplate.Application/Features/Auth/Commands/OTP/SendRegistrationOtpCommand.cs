@@ -1,6 +1,7 @@
-﻿using MediatR;
+﻿using CleanArchitectureTemplate.Application.Features.Auth.DTOs;
+using MediatR;
 
 namespace CleanArchitectureTemplate.Application.Features.Auth.Commands.OTP
 {
-    public record SendRegistrationOtpCommand(string Email) : IRequest<bool>;
+    public record SendRegistrationOtpCommand(OTPRequestDto Request) : IRequest<bool>;
 }
