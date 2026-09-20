@@ -1,4 +1,5 @@
 using CleanArchitectureTemplate.API.Controllers.Base;
+using CleanArchitectureTemplate.Application.Features.Auth.Commands.GoogleLogin;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Login;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Logout;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.OTP;
@@ -36,6 +37,10 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp([FromBody] string Email) =>
         FromResult(await Mediator.Send(new SendRegistrationOtpCommand(Email)));
+
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] string idToken) =>
+        FromResult(await Mediator.Send(new GoogleLoginCommand(idToken)));
 
     [HttpGet("me")]
     [Authorize]
