@@ -1,5 +1,6 @@
 using CleanArchitectureTemplate.API.Controllers.Base;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.ChangePassword;
+using CleanArchitectureTemplate.Application.Features.Auth.Commands.ForgetPassword;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.GoogleLogin;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Login;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Logout;
@@ -52,6 +53,10 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto) =>
         FromResult(await Mediator.Send(new ChangePasswordCommand(dto)));
+
+    [HttpPost("forget-password")]
+    public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequestDto dto) =>
+        FromResult(await Mediator.Send(new ForgetPasswordCommand(dto)));
 
     [HttpGet("me")]
     [Authorize]

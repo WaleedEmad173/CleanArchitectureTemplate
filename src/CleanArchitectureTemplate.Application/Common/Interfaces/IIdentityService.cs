@@ -54,4 +54,8 @@ public interface IIdentityService
         string currentPassword,
         string newPassword,
         CancellationToken cancellationToken = default);
+
+    Task<string> GeneratePasswordResetTokenAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
 }

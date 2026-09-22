@@ -37,6 +37,17 @@ public sealed class IdentityService(
         CancellationToken cancellationToken = default) =>
         userManager.Users.AnyAsync(x => x.UserName == userName, cancellationToken);
 
+    public async Task<string> GeneratePasswordResetTokenAsync(
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            throw new InvalidOperationException("User not found.");
+
+        return await userManager.GeneratePasswordResetTokenAsync(user);
+    }
+
     public async Task<IdentityOperationResult> CreateAsync(
         string fullName,
         string userName,
