@@ -1,4 +1,5 @@
 using CleanArchitectureTemplate.API.Controllers.Base;
+using CleanArchitectureTemplate.Application.Features.Auth.Commands.ChangePassword;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.GoogleLogin;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Login;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Logout;
@@ -46,6 +47,11 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
     [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto) =>
         FromResult(await Mediator.Send(new GoogleLoginCommand(dto)));
+
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto) =>
+        FromResult(await Mediator.Send(new ChangePasswordCommand(dto)));
 
     [HttpGet("me")]
     [Authorize]

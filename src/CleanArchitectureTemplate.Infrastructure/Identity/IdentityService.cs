@@ -111,11 +111,31 @@ public sealed class IdentityService(
         var user = await userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
-            return new IdentityOperationResult(false, ["User not found."]);
+            return new IdentityOperationResult(false, new[] { "User not found." });
 
         user.FullName = fullName.Trim();
 
         var result = await userManager.UpdateAsync(user);
+
+        return result.Succeeded
+            ? new IdentityOperationResult(true, Array.Empty<string>())
+            : new IdentityOperationResult(
+                false,
+                result.Errors.Select(x => x.Description).ToArray());
+    }
+
+    public async Task<IdentityOperationResult> ChangePasswordAsync(
+        int userId,
+        string currentPassword,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+
+        if (user is null)
+            return new IdentityOperationResult(false, new[] { "User not found." });
+
+        var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
 
         return result.Succeeded
             ? new IdentityOperationResult(true, Array.Empty<string>())
