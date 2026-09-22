@@ -11,6 +11,7 @@ using CleanArchitectureTemplate.Application.Features.Auth.Queries.GetProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Plantera.API.Controllers;
 
@@ -19,10 +20,12 @@ namespace Plantera.API.Controllers;
 public class AuthController(IMediator mediator) : BaseController(mediator)
 {
     [HttpPost("register")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> Register(RegisterRequestDto dto) =>
         FromResult(await Mediator.Send(new RegisterCommand(dto)), statusCode: StatusCodes.Status201Created);
 
     [HttpPost("login")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> Login(LoginRequestDto dto) =>
         FromResult(await Mediator.Send(new LoginCommand(dto)));
 
@@ -35,10 +38,12 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
         FromResult(await Mediator.Send(new LogoutCommand(dto)));
 
     [HttpPost("send-otp")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> SendOtp([FromBody] OTPRequestDto dto) =>
         FromResult(await Mediator.Send(new SendRegistrationOtpCommand(dto)));
 
     [HttpPost("google-login")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto) =>
         FromResult(await Mediator.Send(new GoogleLoginCommand(dto)));
 
