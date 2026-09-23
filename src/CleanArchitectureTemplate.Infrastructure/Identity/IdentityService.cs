@@ -1,5 +1,6 @@
 using CleanArchitectureTemplate.Application.Common.Interfaces;
 using CleanArchitectureTemplate.Application.Exceptions;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -125,8 +126,12 @@ public sealed class IdentityService(
         var result = await userManager.UpdateAsync(user);
 
         if (!result.Succeeded)
-            throw new BadRequestException(
-                string.Join(" | ", result.Errors.Select(x => x.Description)));
+        {
+            var failures = result.Errors.Select(e =>
+                new FluentValidation.Results.ValidationFailure(e.Code, e.Description));
+
+            throw new ValidationException("Validation failed.", failures);
+        }
     }
 
     public async Task ChangePasswordAsync(
@@ -150,8 +155,10 @@ public sealed class IdentityService(
             if (isWrongPassword)
                 throw new UnauthorizedException("Current password is incorrect.");
 
-            throw new BadRequestException(
-                string.Join(" | ", result.Errors.Select(x => x.Description)));
+            var failures = result.Errors.Select(e =>
+                new FluentValidation.Results.ValidationFailure(e.Code, e.Description));
+
+            throw new ValidationException("Validation failed.", failures);
         }
     }
 
@@ -172,8 +179,12 @@ public sealed class IdentityService(
         var result = await userManager.ResetPasswordAsync(user, token, newPassword);
 
         if (!result.Succeeded)
-            throw new BadRequestException(
-                string.Join(" | ", result.Errors.Select(x => x.Description)));
+        {
+            var failures = result.Errors.Select(e =>
+                new FluentValidation.Results.ValidationFailure(e.Code, e.Description));
+
+            throw new ValidationException("Validation failed.", failures);
+        }
     }
 
     private static IdentityUserModel Map(ApplicationUser user) =>
