@@ -17,5 +17,6 @@ public sealed class AppDbContext(
         base.OnModelCreating(builder);
 
         builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        builder.ApplySoftDeleteQueryFilter();
     }
 }
