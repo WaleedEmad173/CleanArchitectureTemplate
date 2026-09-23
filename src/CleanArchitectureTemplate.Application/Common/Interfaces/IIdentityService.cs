@@ -6,10 +6,6 @@ public sealed record IdentityUserModel(
     string UserName,
     string Email);
 
-public sealed record IdentityOperationResult(
-    bool Succeeded,
-    IReadOnlyCollection<string> Errors);
-
 public interface IIdentityService
 {
     Task<IdentityUserModel?> GetByIdAsync(
@@ -28,7 +24,7 @@ public interface IIdentityService
         string userName,
         CancellationToken cancellationToken = default);
 
-    Task<IdentityOperationResult> CreateAsync(
+    Task CreateAsync(
         string fullName,
         string userName,
         string email,
@@ -44,12 +40,12 @@ public interface IIdentityService
         int userId,
         CancellationToken cancellationToken = default);
 
-    Task<IdentityOperationResult> UpdateProfileAsync(
+    Task UpdateProfileAsync(
         int userId,
         string fullName,
         CancellationToken cancellationToken = default);
 
-    Task<IdentityOperationResult> ChangePasswordAsync(
+    Task ChangePasswordAsync(
         int userId,
         string currentPassword,
         string newPassword,
@@ -57,5 +53,12 @@ public interface IIdentityService
 
     Task<string> GeneratePasswordResetTokenAsync(
         int userId,
+        CancellationToken cancellationToken = default);
+
+    Task ResetPasswordAsync(
+        string Email,
+        string token,
+        string newPassword,
+        string ConfirmPassword,
         CancellationToken cancellationToken = default);
 }

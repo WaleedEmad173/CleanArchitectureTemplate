@@ -40,15 +40,12 @@ namespace CleanArchitectureTemplate.Application.Features.Auth.Commands.GoogleLog
             {
                 var randomPassword = Guid.NewGuid().ToString() + "Aa1@";
 
-                var result = await identityService.CreateAsync(
+                await identityService.CreateAsync(
                     payload.Name,
                     payload.Email,
                     payload.Email,
                     randomPassword,
                     cancellationToken);
-
-                if (!result.Succeeded)
-                    throw new BadRequestException("Failed to create user from Google account.");
 
                 user = await identityService.GetByEmailAsync(payload.Email, cancellationToken);
             }

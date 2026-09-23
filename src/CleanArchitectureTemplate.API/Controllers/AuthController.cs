@@ -7,6 +7,7 @@ using CleanArchitectureTemplate.Application.Features.Auth.Commands.Logout;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.OTP;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.RefreshToken;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.Register;
+using CleanArchitectureTemplate.Application.Features.Auth.Commands.ResetPassword;
 using CleanArchitectureTemplate.Application.Features.Auth.Commands.UpdateProfile;
 using CleanArchitectureTemplate.Application.Features.Auth.DTOs;
 using CleanArchitectureTemplate.Application.Features.Auth.Queries.GetProfile;
@@ -57,6 +58,10 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
     [HttpPost("forget-password")]
     public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequestDto dto) =>
         FromResult(await Mediator.Send(new ForgetPasswordCommand(dto)));
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto) =>
+    FromResult(await Mediator.Send(new ResetPasswordCommand(dto)));
 
     [HttpGet("me")]
     [Authorize]

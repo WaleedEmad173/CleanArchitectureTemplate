@@ -33,15 +33,12 @@ public sealed class RegisterHandler(
         if (await identityService.EmailExistsAsync(dto.Email, cancellationToken))
             throw new ConflictException("Email is already registered.");
 
-        var result = await identityService.CreateAsync(
+        await identityService.CreateAsync(
             dto.FullName,
             dto.Email,
             dto.Email,
             dto.Password,
             cancellationToken);
-
-        if (!result.Succeeded)
-            throw new BadRequestException(string.Join(" ", result.Errors));
 
         var user = await identityService.GetByEmailAsync(dto.Email, cancellationToken)
             ?? throw new BadRequestException("User could not be created.");

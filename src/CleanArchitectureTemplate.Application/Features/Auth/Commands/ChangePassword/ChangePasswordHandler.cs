@@ -14,14 +14,11 @@ public sealed class ChangePasswordHandler(
         var userId = currentUserService.UserId
             ?? throw new UnauthorizedException();
 
-        var result = await identityService.ChangePasswordAsync(
+        await identityService.ChangePasswordAsync(
             userId,
             request.Request.CurrentPassword,
             request.Request.NewPassword,
             cancellationToken);
-
-        if (!result.Succeeded)
-            throw new BadRequestException(string.Join(' ', result.Errors));
 
         return true;
     }

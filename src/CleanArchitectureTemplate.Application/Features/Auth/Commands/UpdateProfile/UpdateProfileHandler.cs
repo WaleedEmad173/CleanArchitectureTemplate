@@ -17,13 +17,10 @@ public sealed class UpdateProfileHandler(
         var userId = currentUserService.UserId
             ?? throw new UnauthorizedException();
 
-        var result = await identityService.UpdateProfileAsync(
+        await identityService.UpdateProfileAsync(
             userId,
             request.Request.FullName,
             cancellationToken);
-
-        if (!result.Succeeded)
-            throw new ConflictException(string.Join(" ", result.Errors));
 
         var user = await identityService.GetByIdAsync(userId, cancellationToken)
             ?? throw new NotFoundException("User", userId);

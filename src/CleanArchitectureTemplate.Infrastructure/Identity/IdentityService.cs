@@ -1,4 +1,5 @@
 using CleanArchitectureTemplate.Application.Common.Interfaces;
+using CleanArchitectureTemplate.Application.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,12 +44,12 @@ public sealed class IdentityService(
     {
         var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
-            throw new InvalidOperationException("User not found.");
+            throw new NotFoundException("User not found.");
 
         return await userManager.GeneratePasswordResetTokenAsync(user);
     }
 
-    public async Task<IdentityOperationResult> CreateAsync(
+    public async Task CreateAsync(
         string fullName,
         string userName,
         string email,
@@ -66,9 +67,8 @@ public sealed class IdentityService(
         var result = await userManager.CreateAsync(user, password);
 
         if (!result.Succeeded)
-            return new IdentityOperationResult(
-                false,
-                result.Errors.Select(x => x.Description).ToArray());
+            throw new BadRequestException(
+                string.Join(" | ", result.Errors.Select(x => x.Description)));
 
         if (!await roleManager.RoleExistsAsync("User"))
         {
@@ -76,19 +76,15 @@ public sealed class IdentityService(
                 new IdentityRole<int>("User"));
 
             if (!roleResult.Succeeded)
-                return new IdentityOperationResult(
-                    false,
-                    roleResult.Errors.Select(x => x.Description).ToArray());
+                throw new BadRequestException(
+                    string.Join(" | ", roleResult.Errors.Select(x => x.Description)));
         }
 
         var roleAssignment = await userManager.AddToRoleAsync(user, "User");
 
         if (!roleAssignment.Succeeded)
-            return new IdentityOperationResult(
-                false,
-                roleAssignment.Errors.Select(x => x.Description).ToArray());
-
-        return new IdentityOperationResult(true, Array.Empty<string>());
+            throw new BadRequestException(
+                string.Join(" | ", roleAssignment.Errors.Select(x => x.Description)));
     }
 
     public async Task<bool> CheckPasswordAsync(
@@ -114,7 +110,7 @@ public sealed class IdentityService(
         return (await userManager.GetRolesAsync(user)).ToArray();
     }
 
-    public async Task<IdentityOperationResult> UpdateProfileAsync(
+    public async Task UpdateProfileAsync(
         int userId,
         string fullName,
         CancellationToken cancellationToken = default)
@@ -122,20 +118,18 @@ public sealed class IdentityService(
         var user = await userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
-            return new IdentityOperationResult(false, new[] { "User not found." });
+            throw new NotFoundException("User not found.");
 
         user.FullName = fullName.Trim();
 
         var result = await userManager.UpdateAsync(user);
 
-        return result.Succeeded
-            ? new IdentityOperationResult(true, Array.Empty<string>())
-            : new IdentityOperationResult(
-                false,
-                result.Errors.Select(x => x.Description).ToArray());
+        if (!result.Succeeded)
+            throw new BadRequestException(
+                string.Join(" | ", result.Errors.Select(x => x.Description)));
     }
 
-    public async Task<IdentityOperationResult> ChangePasswordAsync(
+    public async Task ChangePasswordAsync(
         int userId,
         string currentPassword,
         string newPassword,
@@ -144,15 +138,42 @@ public sealed class IdentityService(
         var user = await userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
-            return new IdentityOperationResult(false, new[] { "User not found." });
+            throw new NotFoundException("User not found.");
 
         var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
 
-        return result.Succeeded
-            ? new IdentityOperationResult(true, Array.Empty<string>())
-            : new IdentityOperationResult(
-                false,
-                result.Errors.Select(x => x.Description).ToArray());
+        if (!result.Succeeded)
+        {
+            var isWrongPassword = result.Errors.Any(
+                e => e.Code == "PasswordMismatch");
+
+            if (isWrongPassword)
+                throw new UnauthorizedException("Current password is incorrect.");
+
+            throw new BadRequestException(
+                string.Join(" | ", result.Errors.Select(x => x.Description)));
+        }
+    }
+
+    public async Task ResetPasswordAsync(
+        string email,
+        string token,
+        string newPassword,
+        string confirmPassword,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            throw new NotFoundException("User not found.");
+
+        if (newPassword != confirmPassword)
+            throw new BadRequestException("Passwords do not match.");
+
+        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
+
+        if (!result.Succeeded)
+            throw new BadRequestException(
+                string.Join(" | ", result.Errors.Select(x => x.Description)));
     }
 
     private static IdentityUserModel Map(ApplicationUser user) =>
