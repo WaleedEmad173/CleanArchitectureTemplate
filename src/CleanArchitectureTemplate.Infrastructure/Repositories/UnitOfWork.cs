@@ -4,13 +4,13 @@ using CleanArchitectureTemplate.Infrastructure.Context;
 
 namespace CleanArchitectureTemplate.Infrastructure.Repositories;
 
-public sealed class UnitOfWork(
-    AppDbContext context,
-    IProductRepository products,
-    IRefreshTokenRepository refreshTokens) : IUnitOfWork
+public sealed class UnitOfWork(AppDbContext context) : IUnitOfWork
 {
-    public IProductRepository Products { get; } = products;
-    public IRefreshTokenRepository RefreshTokens { get; } = refreshTokens;
+    private IProductRepository? _products;
+    private IRefreshTokenRepository? _refreshTokens;
+
+    public IProductRepository Products => _products ??= new ProductRepository(context);
+    public IRefreshTokenRepository RefreshTokens => _refreshTokens ??= new RefreshTokenRepository(context);
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         context.SaveChangesAsync(cancellationToken);

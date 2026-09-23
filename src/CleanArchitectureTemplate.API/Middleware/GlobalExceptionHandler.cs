@@ -1,36 +1,26 @@
 using CleanArchitectureTemplate.Application.Common.Responses;
 using CleanArchitectureTemplate.Application.Exceptions;
 using FluentValidation;
-using System.Text.Json;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace CleanArchitectureTemplate.API.Middleware;
 
-public sealed class GlobalExceptionMiddleware(
-    RequestDelegate next,
-    ILogger<GlobalExceptionMiddleware> logger)
+public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    : IExceptionHandler
 {
-    public async Task InvokeAsync(HttpContext context)
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await next(context);
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(
-                exception,
-                "Unhandled exception for {Method} {Path}",
-                context.Request.Method,
-                context.Request.Path);
+        logger.LogError(
+            exception,
+            "Unhandled exception for {Method} {Path}",
+            httpContext.Request.Method,
+            httpContext.Request.Path);
 
-            await HandleExceptionAsync(context, exception);
-        }
-    }
-
-    private static async Task HandleExceptionAsync(
-        HttpContext context,
-        Exception exception)
-    {
         var (statusCode, message, errors) = exception switch
         {
             ValidationException validationException =>
@@ -68,8 +58,8 @@ public sealed class GlobalExceptionMiddleware(
                 )
         };
 
-        context.Response.StatusCode = statusCode;
-        context.Response.ContentType = "application/json";
+        httpContext.Response.StatusCode = statusCode;
+        httpContext.Response.ContentType = "application/json";
 
         var response = new ApiResponse<object>
         {
@@ -79,7 +69,8 @@ public sealed class GlobalExceptionMiddleware(
             Errors = errors
         };
 
-        await context.Response.WriteAsync(
-            JsonSerializer.Serialize(response));
+        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+
+        return true;
     }
 }
