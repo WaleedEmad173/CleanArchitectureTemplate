@@ -17,7 +17,7 @@ public sealed class ProductController(IMediator mediator) : BaseController(media
 {
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] PaginationParams pagination) =>
-        FromResult((await Mediator.Send(new GetProductsQuery(pagination))).Items);
+        FromResult(await Mediator.Send(new GetProductsQuery(pagination)));
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id) =>
