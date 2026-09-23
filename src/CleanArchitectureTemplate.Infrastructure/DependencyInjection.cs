@@ -22,9 +22,12 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddScoped<CleanArchitectureTemplate.Infrastructure.Context.Interceptors.AuditingInterceptor>();
+
+        services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection")));
+                configuration.GetConnectionString("DefaultConnection"))
+                .AddInterceptors(sp.GetRequiredService<CleanArchitectureTemplate.Infrastructure.Context.Interceptors.AuditingInterceptor>()));
 
         services.AddIdentityCore<ApplicationUser>(options =>
         {
