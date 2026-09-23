@@ -3,6 +3,14 @@ namespace CleanArchitectureTemplate.Domain.Entities;
 public abstract class BaseEntity
 {
     public int Id { get; set; }
-    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime CreatedAtUtc { get; set; }
+    public int? CreatedBy { get; set; }
+
     public DateTime? UpdatedAtUtc { get; set; }
+    public int? UpdatedBy { get; set; }
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
+    public int? DeletedBy { get; set; }
 }
