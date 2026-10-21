@@ -1,3 +1,4 @@
+using CleanArchitectureTemplate.Application.Common.Pagination;
 using CleanArchitectureTemplate.Application.Common.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,19 @@ public abstract class BaseController(IMediator mediator) : ControllerBase
             Message = message,
             Data = data
         };
+
+        return StatusCode(statusCode, response);
+    }
+
+    protected IActionResult FromPagedResult<T>(
+        PagedResult<T> pagedResult,
+        string message = "Success",
+        int statusCode = StatusCodes.Status200OK)
+    {
+        var response = ResponseHandler.Success(
+            data: pagedResult.Items,
+            message: message,
+            meta: pagedResult.Meta);
 
         return StatusCode(statusCode, response);
     }

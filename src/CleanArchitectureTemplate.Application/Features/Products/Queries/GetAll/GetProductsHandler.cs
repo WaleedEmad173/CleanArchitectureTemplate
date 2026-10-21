@@ -1,7 +1,9 @@
 using CleanArchitectureTemplate.Application.Common.Pagination;
 using CleanArchitectureTemplate.Application.Features.Products.DTOs;
+using CleanArchitectureTemplate.Domain.Entities;
 using CleanArchitectureTemplate.Domain.UnitOfWork;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitectureTemplate.Application.Features.Products.Queries.GetAll;
 
@@ -12,28 +14,20 @@ public sealed class GetProductsHandler(IUnitOfWork unitOfWork)
         GetProductsQuery request,
         CancellationToken cancellationToken)
     {
-        var (items, totalCount) = await unitOfWork.Products.GetPagedAsync(
-            request.Params.PageNumber,
-            request.Params.PageSize,
-            cancellationToken);
+        var p = request.Params;
 
-        var data = items
-            .Select(x => new ProductDto(
-                x.Id,
-                x.Name,
-                x.Price,
-                x.Stock))
-            .ToList();
-
-        var totalPages = (int)Math.Ceiling(
-            totalCount / (double)request.Params.PageSize);
-
-        var meta = new PaginationMeta(
-            request.Params.PageNumber,
-            request.Params.PageSize,
-            totalCount,
-            totalPages);
-
-        return new PagedResult<ProductDto>(data, meta);
+        return await unitOfWork.Products
+            .Query()
+            .AsNoTracking()
+            .Filter(p.MinPrice, x => x.Price >= p.MinPrice)
+            .Filter(p.MaxPrice, x => x.Price <= p.MaxPrice)
+            .Filter(p.InStockOnly == true, x => x.Stock > 0)
+            .Search(p.Search, x => x.Name)
+            .Sort(p.SortBy, p.IsDescending, defaultProperty: nameof(Product.Id))
+            .ToPagedResultAsync(
+                p.PageNumber,
+                p.PageSize,
+                x => new ProductDto(x.Id, x.Name, x.Price, x.Stock),
+                cancellationToken);
     }
 }

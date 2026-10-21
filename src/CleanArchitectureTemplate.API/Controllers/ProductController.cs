@@ -16,8 +16,8 @@ namespace CleanArchitectureTemplate.API.Controllers;
 public sealed class ProductController(IMediator mediator) : BaseController(mediator)
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] PaginationParams pagination) =>
-        FromResult(await Mediator.Send(new GetProductsQuery(pagination)));
+    public async Task<IActionResult> GetAll([FromQuery] ProductParams parameters) =>
+        FromPagedResult(await Mediator.Send(new GetProductsQuery(parameters)));
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id) =>
