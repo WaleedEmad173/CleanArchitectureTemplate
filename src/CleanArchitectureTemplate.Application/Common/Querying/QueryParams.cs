@@ -9,6 +9,8 @@ public class QueryParams : PaginationParams
 
     [StringLength(MaxSearchLength)]
     public string? Search { get; init; }
+
+    [StringLength(128)]
     public string? SortBy { get; init; }
     public bool SortDescending { get; init; }
 }

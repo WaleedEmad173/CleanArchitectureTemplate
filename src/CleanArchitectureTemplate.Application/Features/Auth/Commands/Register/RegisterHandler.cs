@@ -22,7 +22,8 @@ public sealed class RegisterHandler(
     {
         var dto = request.Request;
 
-        var cacheKey = $"RegistrationOTP_{dto.Email.Trim().ToLower()}";
+        var normalizedEmail = dto.Email.Trim();
+        var cacheKey = $"RegistrationOTP_{normalizedEmail.ToLowerInvariant()}";
         var attemptsKey = $"{cacheKey}_Attempts";
 
         if (!memoryCache.TryGetValue(cacheKey, out string? savedOtp))
@@ -30,12 +31,15 @@ public sealed class RegisterHandler(
 
         if (savedOtp != dto.OtpCode)
         {
-            var attempts = memoryCache.GetOrCreate(attemptsKey, entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
-                return 0;
-            }) + 1;
-            memoryCache.Set(attemptsKey, attempts, TimeSpan.FromMinutes(5));
+            var attempts = memoryCache.TryGetValue(attemptsKey, out int existingAttempts)
+                ? existingAttempts + 1
+                : 1;
+            memoryCache.Set(
+                attemptsKey,
+                attempts,
+                new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5))
+                    .SetSize(1));
 
             if (attempts >= 5)
             {
@@ -47,42 +51,52 @@ public sealed class RegisterHandler(
             throw new BadRequestException("Invalid verification code.");
         }
 
-        if (await identityService.EmailExistsAsync(dto.Email, cancellationToken))
+        if (await identityService.EmailExistsAsync(normalizedEmail, cancellationToken))
             throw new ConflictException("Email is already registered.");
 
-        await identityService.CreateAsync(
-            dto.FullName,
-            dto.Email,
-            dto.Email,
-            dto.Password,
-            cancellationToken);
-
-        var user = await identityService.GetByEmailAsync(dto.Email, cancellationToken)
-            ?? throw new BadRequestException("User could not be created.");
-
-        var roles = await identityService.GetRolesAsync(user.Id, cancellationToken);
-        var access = await jwtService.CreateAccessTokenAsync(
-            user.Id, user.Email, user.UserName, user.FullName, roles, cancellationToken);
-
-        var rawRefreshToken = tokenGenerator.GenerateRefreshToken();
-
-        var refreshToken = new RefreshTokenEntity
+        await unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
         {
-            UserId = user.Id,
-            TokenHash = tokenGenerator.HashToken(rawRefreshToken),
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
-        };
+            await identityService.CreateAsync(
+                dto.FullName,
+                normalizedEmail,
+                normalizedEmail,
+                dto.Password,
+                cancellationToken);
 
-        await unitOfWork.RefreshTokens.AddAsync(refreshToken, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            var user = await identityService.GetByEmailAsync(normalizedEmail, cancellationToken)
+                ?? throw new BadRequestException("User could not be created.");
 
-        memoryCache.Remove(cacheKey);
-        memoryCache.Remove(attemptsKey);
+            var roles = await identityService.GetRolesAsync(user.Id, cancellationToken);
+            var access = await jwtService.CreateAccessTokenAsync(
+                user.Id, user.Email, user.UserName, user.FullName, roles, cancellationToken);
 
-        return new AuthResponseDto(
-            access.AccessToken,
-            access.ExpiresAtUtc,
-            rawRefreshToken,
-            refreshToken.ExpiresAtUtc);
+            var rawRefreshToken = tokenGenerator.GenerateRefreshToken();
+
+            var refreshToken = new RefreshTokenEntity
+            {
+                UserId = user.Id,
+                TokenHash = tokenGenerator.HashToken(rawRefreshToken),
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+            };
+
+            await unitOfWork.RefreshTokens.AddAsync(refreshToken, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.CommitTransactionAsync(cancellationToken);
+
+            memoryCache.Remove(cacheKey);
+            memoryCache.Remove(attemptsKey);
+
+            return new AuthResponseDto(
+                access.AccessToken,
+                access.ExpiresAtUtc,
+                rawRefreshToken,
+                refreshToken.ExpiresAtUtc);
+        }
+        catch
+        {
+            await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            throw;
+        }
     }
 }

@@ -28,11 +28,11 @@ public sealed class CachingBehavior<TRequest, TResponse>(
 
         if (cache.TryGetValue(cacheKey, out TResponse? cachedResponse))
         {
-            logger.LogInformation("Returning cached value for {CacheKey}", cacheKey);
+            logger.LogDebug("Returning cached value for {CacheKey}", cacheKey);
             return cachedResponse!;
         }
 
-        logger.LogInformation("Cache miss for {CacheKey}. Fetching from source.", cacheKey);
+        logger.LogDebug("Cache miss for {CacheKey}. Fetching from source.", cacheKey);
 
         var response = await next(cancellationToken);
 
@@ -40,7 +40,7 @@ public sealed class CachingBehavior<TRequest, TResponse>(
         {
             SlidingExpiration = cacheableQuery.SlidingExpiration ?? TimeSpan.FromMinutes(5),
             AbsoluteExpirationRelativeToNow = cacheableQuery.AbsoluteExpirationRelativeToNow ?? TimeSpan.FromMinutes(15)
-        };
+        }.SetSize(1);
 
         cache.Set(cacheKey, response, options);
 

@@ -8,6 +8,8 @@ public sealed class UpdateProfileValidator : AbstractValidator<UpdateProfileComm
     public UpdateProfileValidator()
     {
         RuleFor(x => x.Request.FullName)
-            .NotEmpty().MaximumLength(100);
+            .NotEmpty()
+            .Must(name => !string.IsNullOrWhiteSpace(name))
+            .MaximumLength(100);
     }
 }

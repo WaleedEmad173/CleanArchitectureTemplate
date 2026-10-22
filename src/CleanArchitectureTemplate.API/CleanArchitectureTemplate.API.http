@@ -1,14 +1,47 @@
-@CleanArchitectureTemplate.API_HostAddress = https://localhost:7000
+@CleanArchitectureTemplate.API_HostAddress = https://localhost:50658
 
+### Request an email verification code
+POST {{CleanArchitectureTemplate.API_HostAddress}}/api/auth/send-otp
+Content-Type: application/json
+
+{
+  "email": "developer@example.com"
+}
+
+### Register (replace the sample code with the one received by email)
 POST {{CleanArchitectureTemplate.API_HostAddress}}/api/auth/register
 Content-Type: application/json
 
 {
-  "fullName": "Admin User",
-  "userName": "admin",
-  "email": "admin@example.com",
+  "fullName": "Developer User",
+  "email": "developer@example.com",
   "password": "Password1",
-  "confirmPassword": "Password1"
+  "confirmPassword": "Password1",
+  "otpCode": "123456"
+}
+
+### Log in
+POST {{CleanArchitectureTemplate.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "developer@example.com",
+  "password": "Password1"
+}
+
+### List products with filtering, search, sorting, and pagination
+GET {{CleanArchitectureTemplate.API_HostAddress}}/api/products?search=phone&minPrice=10&maxPrice=500&inStockOnly=true&sortBy=price%20desc&pageNumber=1&pageSize=10
+Accept: application/json
+
+### Create a product (replace the token)
+POST {{CleanArchitectureTemplate.API_HostAddress}}/api/products
+Authorization: Bearer paste-access-token-here
+Content-Type: application/json
+
+{
+  "name": "Example product",
+  "price": 49.99,
+  "stock": 10
 }
 
 ###

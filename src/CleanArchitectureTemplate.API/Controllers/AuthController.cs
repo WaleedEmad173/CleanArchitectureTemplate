@@ -24,57 +24,57 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
 {
     [HttpPost("register")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto) =>
-        FromResult(await Mediator.Send(new RegisterCommand(dto)), statusCode: StatusCodes.Status201Created);
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new RegisterCommand(dto), cancellationToken), statusCode: StatusCodes.Status201Created);
 
     [HttpPost("login")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto) =>
-        FromResult(await Mediator.Send(new LoginCommand(dto)));
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new LoginCommand(dto), cancellationToken));
 
     [HttpPost("refresh")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshRequestDto dto) =>
-        FromResult(await Mediator.Send(new RefreshTokenCommand(dto)));
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new RefreshTokenCommand(dto), cancellationToken));
 
     [HttpPost("logout")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto) =>
-        FromResult(await Mediator.Send(new LogoutCommand(dto)));
+    public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new LogoutCommand(dto), cancellationToken));
 
     [HttpPost("send-otp")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> SendOtp([FromBody] OTPRequestDto dto) =>
-        FromResult(await Mediator.Send(new SendRegistrationOtpCommand(dto)));
+    public async Task<IActionResult> SendOtp([FromBody] OTPRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new SendRegistrationOtpCommand(dto), cancellationToken));
 
     [HttpPost("google-login")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto) =>
-        FromResult(await Mediator.Send(new GoogleLoginCommand(dto)));
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new GoogleLoginCommand(dto), cancellationToken));
 
     [HttpPost("change-password")]
     [Authorize]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto) =>
-        FromResult(await Mediator.Send(new ChangePasswordCommand(dto)));
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new ChangePasswordCommand(dto), cancellationToken));
 
     [HttpPost("forget-password")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequestDto dto) =>
-        FromResult(await Mediator.Send(new ForgetPasswordCommand(dto)));
+    public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new ForgetPasswordCommand(dto), cancellationToken));
 
     [HttpPost("reset-password")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto) =>
-        FromResult(await Mediator.Send(new ResetPasswordCommand(dto)));
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new ResetPasswordCommand(dto), cancellationToken));
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<IActionResult> GetProfile() =>
-        FromResult(await Mediator.Send(new GetProfileQuery()));
+    public async Task<IActionResult> GetProfile(CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new GetProfileQuery(), cancellationToken));
 
     [HttpPut("me")]
     [Authorize]
-    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto) =>
-        FromResult(await Mediator.Send(new UpdateProfileCommand(dto)));
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new UpdateProfileCommand(dto), cancellationToken));
 }

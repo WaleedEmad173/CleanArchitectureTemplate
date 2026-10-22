@@ -1,16 +1,33 @@
 using CleanArchitectureTemplate.API.Middleware;
 using CleanArchitectureTemplate.Application;
+using CleanArchitectureTemplate.Application.Common.Responses;
 using CleanArchitectureTemplate.Infrastructure;
 using CleanArchitectureTemplate.Infrastructure.Context;
 using CleanArchitectureTemplate.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var configuredJwtKey = builder.Configuration["Jwt:Key"];
+if (builder.Environment.IsDevelopment() &&
+    (string.IsNullOrWhiteSpace(configuredJwtKey) ||
+     configuredJwtKey.Contains("CHANGE_THIS", StringComparison.OrdinalIgnoreCase) ||
+     Encoding.UTF8.GetByteCount(configuredJwtKey) < 32))
+{
+    builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["Jwt:Key"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64))
+    });
+    Console.WriteLine("Generated an ephemeral Jwt:Key for Development; tokens will stop working after restart.");
+}
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
@@ -42,12 +59,31 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
-    options.SuppressModelStateInvalidFilter = true;
+    options.SuppressModelStateInvalidFilter = false;
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(entry => entry.Value?.Errors.Count > 0)
+            .SelectMany(entry => entry.Value!.Errors.Select(error =>
+                new ResponseError(
+                    "Validation",
+                    string.IsNullOrWhiteSpace(error.ErrorMessage) ? "Invalid value." : error.ErrorMessage,
+                    entry.Key)))
+            .ToArray();
+
+        return new BadRequestObjectResult(new ApiResponse<object>
+        {
+            Succeeded = false,
+            StatusCode = StatusCodes.Status400BadRequest,
+            Message = "Validation failed.",
+            Errors = errors
+        });
+    };
 });
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache(options => options.SizeLimit = 10_000);
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -72,6 +108,16 @@ builder.Services.AddCors(options =>
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(new ApiResponse<object>
+        {
+            Succeeded = false,
+            StatusCode = StatusCodes.Status429TooManyRequests,
+            Message = "Too many requests. Try again later."
+        }, cancellationToken);
+    };
 
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
@@ -123,23 +169,31 @@ app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseSerilogRequestLogging();
 
+if (!app.Environment.IsDevelopment())
+    app.UseHsts();
+
 app.UseHttpsRedirection();
+app.UseRouting();
 app.UseCors("ConfiguredOrigins");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-await InitializeDatabaseAsync(app);
+var applyMigrationsOnStartup =
+    builder.Configuration.GetValue<bool?>("Database:ApplyMigrationsOnStartup")
+    ?? app.Environment.IsDevelopment();
+await InitializeDatabaseAsync(app, applyMigrationsOnStartup);
 
 await app.RunAsync();
 
-static async Task InitializeDatabaseAsync(WebApplication app)
+static async Task InitializeDatabaseAsync(WebApplication app, bool applyMigrationsOnStartup)
 {
-    using var scope = app.Services.CreateScope();
+    await using var scope = app.Services.CreateAsyncScope();
 
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    if (applyMigrationsOnStartup)
+        await db.Database.MigrateAsync();
 
     var roleManager = scope.ServiceProvider
         .GetRequiredService<RoleManager<IdentityRole<int>>>();

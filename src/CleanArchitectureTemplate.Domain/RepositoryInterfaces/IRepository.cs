@@ -5,7 +5,6 @@ namespace CleanArchitectureTemplate.Domain.RepositoryInterfaces;
 
 public interface IRepository<TEntity> where TEntity : BaseEntity
 {
-    IQueryable<TEntity> Query();
     Task<TEntity?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
     Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);

@@ -16,25 +16,25 @@ namespace CleanArchitectureTemplate.API.Controllers;
 public sealed class ProductController(IMediator mediator) : BaseController(mediator)
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] ProductQueryParams query) =>
-        FromPagedResult(await Mediator.Send(new GetProductsQuery(query)));
+    public async Task<IActionResult> GetAll([FromQuery] ProductQueryParams query, CancellationToken cancellationToken) =>
+        FromPagedResult(await Mediator.Send(new GetProductsQuery(query), cancellationToken));
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id) =>
-        FromResult(await Mediator.Send(new GetProductByIdQuery(id)));
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new GetProductByIdQuery(id), cancellationToken));
 
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateProductDto request) =>
-        FromResult(await Mediator.Send(new CreateProductCommand(request)), "Product created successfully.", StatusCodes.Status201Created);
+    public async Task<IActionResult> Create([FromBody] CreateProductDto request, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new CreateProductCommand(request), cancellationToken), "Product created successfully.", StatusCodes.Status201Created);
 
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto request) =>
-        FromResult(await Mediator.Send(new UpdateProductCommand(id, request)), "Product updated successfully.");
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto request, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new UpdateProductCommand(id, request), cancellationToken), "Product updated successfully.");
 
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id) =>
-        FromResult(await Mediator.Send(new DeleteProductCommand(id)), "Product deleted successfully.");
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken) =>
+        FromResult(await Mediator.Send(new DeleteProductCommand(id), cancellationToken), "Product deleted successfully.");
 }

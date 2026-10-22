@@ -10,8 +10,6 @@ public class Repository<TEntity>(DbContext context) : IRepository<TEntity>
 {
     private readonly DbSet<TEntity> _set = context.Set<TEntity>();
 
-    public IQueryable<TEntity> Query() => _set;
-
     public Task<TEntity?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default) =>

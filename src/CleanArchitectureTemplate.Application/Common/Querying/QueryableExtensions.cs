@@ -1,5 +1,3 @@
-using CleanArchitectureTemplate.Application.Common.Pagination;
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -7,6 +5,17 @@ namespace CleanArchitectureTemplate.Application.Common.Querying;
 
 public static class QueryableExtensions
 {
+    public static IQueryable<T> Filter<T>(
+        this IQueryable<T> query,
+        bool? enabled,
+        Expression<Func<T, bool>> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        return enabled == true ? query.Where(predicate) : query;
+    }
+
     public static IQueryable<T> Filter<T, TValue>(
         this IQueryable<T> query,
         TValue? value,
@@ -162,63 +171,6 @@ public static class QueryableExtensions
         }
 
         return ordered;
-    }
-
-    public static async Task<PagedResult<TDto>> ToPagedResultAsync<TEntity, TDto>(
-        this IQueryable<TEntity> query,
-        int pageNumber,
-        int pageSize,
-        Expression<Func<TEntity, TDto>> map,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(map);
-
-        pageNumber = Math.Max(1, pageNumber);
-        pageSize = Math.Clamp(pageSize, 1, PaginationParams.MaxPageSize);
-
-        var totalCount = await query.CountAsync(cancellationToken);
-        var skip = (long)(pageNumber - 1) * pageSize;
-
-        if (totalCount == 0 || skip >= totalCount || skip > int.MaxValue)
-        {
-            return PagedResult<TDto>.Create([], totalCount, pageNumber, pageSize);
-        }
-
-        var items = await query
-            .Skip((int)skip)
-            .Take(pageSize)
-            .Select(map)
-            .ToListAsync(cancellationToken);
-
-        return PagedResult<TDto>.Create(items, totalCount, pageNumber, pageSize);
-    }
-
-    public static async Task<PagedResult<T>> ToPagedResultAsync<T>(
-        this IQueryable<T> query,
-        int pageNumber,
-        int pageSize,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(query);
-
-        pageNumber = Math.Max(1, pageNumber);
-        pageSize = Math.Clamp(pageSize, 1, PaginationParams.MaxPageSize);
-
-        var totalCount = await query.CountAsync(cancellationToken);
-        var skip = (long)(pageNumber - 1) * pageSize;
-
-        if (totalCount == 0 || skip >= totalCount || skip > int.MaxValue)
-        {
-            return PagedResult<T>.Create([], totalCount, pageNumber, pageSize);
-        }
-
-        var items = await query
-            .Skip((int)skip)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        return PagedResult<T>.Create(items, totalCount, pageNumber, pageSize);
     }
 
     private static IQueryable<T> ApplyDefaultSort<T>(

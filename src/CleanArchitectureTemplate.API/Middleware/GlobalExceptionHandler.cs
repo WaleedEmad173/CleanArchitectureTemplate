@@ -15,12 +15,6 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         Exception exception,
         CancellationToken cancellationToken)
     {
-        logger.LogError(
-            exception,
-            "Unhandled exception for {Method} {Path}",
-            httpContext.Request.Method,
-            httpContext.Request.Path);
-
         var (statusCode, message, errors) = exception switch
         {
             ValidationException validationException =>
@@ -63,6 +57,24 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
                     null
                 )
         };
+
+        if (statusCode >= StatusCodes.Status500InternalServerError)
+        {
+            logger.LogError(
+                exception,
+                "Unhandled exception for {Method} {Path}",
+                httpContext.Request.Method,
+                httpContext.Request.Path);
+        }
+        else
+        {
+            logger.LogWarning(
+                "Request failed with status {StatusCode} for {Method} {Path}: {Message}",
+                statusCode,
+                httpContext.Request.Method,
+                httpContext.Request.Path,
+                message);
+        }
 
         httpContext.Response.StatusCode = statusCode;
         httpContext.Response.ContentType = "application/json";

@@ -9,6 +9,7 @@ public sealed class SendRegistrationOtpCommandValidator : AbstractValidator<Send
     {
         RuleFor(x => x.Request.Email)
             .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Invalid email format.");
+            .EmailAddress().WithMessage("Invalid email format.")
+            .MaximumLength(256);
     }
 }

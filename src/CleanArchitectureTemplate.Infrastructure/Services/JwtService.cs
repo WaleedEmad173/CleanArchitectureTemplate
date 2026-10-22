@@ -23,9 +23,7 @@ public sealed class JwtService(IConfiguration configuration) : IJwtService
             ?? throw new InvalidOperationException("Jwt:Key is missing.");
 
         var expiresAt = DateTime.UtcNow.AddMinutes(
-            int.TryParse(section["ExpireMinutes"], out var minutes)
-                ? minutes
-                : 15);
+            int.Parse(section["ExpireMinutes"]!));
 
         var claims = new List<Claim>
         {

@@ -12,10 +12,14 @@ public sealed class UpdateProductValidator : AbstractValidator<UpdateProductComm
 
         RuleFor(x => x.Request.Name)
             .NotEmpty()
+            .Must(name => !string.IsNullOrWhiteSpace(name))
             .MaximumLength(150);
 
         RuleFor(x => x.Request.Price)
-            .GreaterThanOrEqualTo(0);
+            .GreaterThanOrEqualTo(0)
+            .LessThanOrEqualTo(9999999999999999.99m)
+            .Must(price => decimal.Round(price, 2) == price)
+            .WithMessage("Price must be between 0 and 9999999999999999.99 with at most 2 decimal places.");
 
         RuleFor(x => x.Request.Stock)
             .GreaterThanOrEqualTo(0);

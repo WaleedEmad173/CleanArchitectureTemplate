@@ -8,6 +8,7 @@ public sealed class GoogleLoginCommandValidator : AbstractValidator<GoogleLoginC
     public GoogleLoginCommandValidator()
     {
         RuleFor(x => x.Request.IdToken)
-            .NotEmpty().WithMessage("Google ID token is required.");
+            .NotEmpty().WithMessage("Google ID token is required.")
+            .MaximumLength(8192);
     }
 }
