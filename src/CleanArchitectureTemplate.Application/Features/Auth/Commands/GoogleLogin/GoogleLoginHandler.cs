@@ -34,23 +34,34 @@ namespace CleanArchitectureTemplate.Application.Features.Auth.Commands.GoogleLog
                 throw new BadRequestException("Invalid Google token.");
             }
 
-            var user = await identityService.GetByEmailAsync(payload.Email, cancellationToken);
+            if (!payload.EmailVerified || string.IsNullOrWhiteSpace(payload.Email) || string.IsNullOrWhiteSpace(payload.Subject))
+                throw new UnauthorizedException("Google account email must be verified.");
+
+            var user = await identityService.GetByGoogleSubjectAsync(payload.Subject, cancellationToken);
 
             if (user == null)
             {
-                var randomPassword = Guid.NewGuid().ToString() + "Aa1@";
-
-                await identityService.CreateAsync(
-                    payload.Name,
-                    payload.Email,
-                    payload.Email,
-                    randomPassword,
-                    cancellationToken);
-
                 user = await identityService.GetByEmailAsync(payload.Email, cancellationToken);
+
+                if (user is null)
+                {
+                    var randomPassword = Guid.NewGuid().ToString() + "Aa1@";
+
+                    await identityService.CreateAsync(
+                        payload.Name ?? payload.Email,
+                        payload.Email,
+                        payload.Email,
+                        randomPassword,
+                        cancellationToken);
+
+                    user = await identityService.GetByEmailAsync(payload.Email, cancellationToken)
+                        ?? throw new BadRequestException("Google account could not be created.");
+                }
+
+                await identityService.LinkGoogleLoginAsync(user.Id, payload.Subject, cancellationToken);
             }
 
-            var roles = await identityService.GetRolesAsync(user!.Id, cancellationToken);
+            var roles = await identityService.GetRolesAsync(user.Id, cancellationToken);
             var access = await jwtService.CreateAccessTokenAsync(
                 user.Id, user.Email, user.UserName, user.FullName, roles, cancellationToken);
 

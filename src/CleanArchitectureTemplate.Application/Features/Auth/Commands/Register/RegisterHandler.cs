@@ -23,12 +23,29 @@ public sealed class RegisterHandler(
         var dto = request.Request;
 
         var cacheKey = $"RegistrationOTP_{dto.Email.Trim().ToLower()}";
+        var attemptsKey = $"{cacheKey}_Attempts";
 
         if (!memoryCache.TryGetValue(cacheKey, out string? savedOtp))
             throw new BadRequestException("The verification code has expired or does not exist.");
 
         if (savedOtp != dto.OtpCode)
+        {
+            var attempts = memoryCache.GetOrCreate(attemptsKey, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                return 0;
+            }) + 1;
+            memoryCache.Set(attemptsKey, attempts, TimeSpan.FromMinutes(5));
+
+            if (attempts >= 5)
+            {
+                memoryCache.Remove(cacheKey);
+                memoryCache.Remove(attemptsKey);
+                throw new BadRequestException("Too many invalid verification code attempts. Request a new code.");
+            }
+
             throw new BadRequestException("Invalid verification code.");
+        }
 
         if (await identityService.EmailExistsAsync(dto.Email, cancellationToken))
             throw new ConflictException("Email is already registered.");
@@ -60,6 +77,7 @@ public sealed class RegisterHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         memoryCache.Remove(cacheKey);
+        memoryCache.Remove(attemptsKey);
 
         return new AuthResponseDto(
             access.AccessToken,

@@ -26,14 +26,15 @@ public sealed class RefreshTokenHandler(
         if (stored is null || !stored.IsActive)
             throw new UnauthorizedException("Refresh token is invalid or expired.");
 
+        var now = DateTime.UtcNow;
+        if (!await unitOfWork.RefreshTokens.TryRevokeActiveAsync(stored.Id, now, cancellationToken))
+            throw new UnauthorizedException("Refresh token is invalid or expired.");
+
         var user = await identityService.GetByIdAsync(
             stored.UserId, cancellationToken);
 
         if (user is null)
             throw new UnauthorizedException("User no longer exists.");
-
-        stored.RevokedAtUtc = DateTime.UtcNow;
-        unitOfWork.RefreshTokens.Update(stored);
 
         var roles = await identityService.GetRolesAsync(user.Id, cancellationToken);
 
@@ -46,7 +47,7 @@ public sealed class RefreshTokenHandler(
         {
             UserId = user.Id,
             TokenHash = tokenGenerator.HashToken(rawRefreshToken),
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+            ExpiresAtUtc = now.AddDays(14)
         };
 
         await unitOfWork.RefreshTokens

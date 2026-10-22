@@ -7,6 +7,7 @@ namespace CleanArchitectureTemplate.Application.Common.Behaviors;
 
 public sealed class CachingBehavior<TRequest, TResponse>(
     IMemoryCache cache,
+    ICacheVersionStore cacheVersionStore,
     ILogger<CachingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull, IRequest<TResponse>
@@ -21,13 +22,17 @@ public sealed class CachingBehavior<TRequest, TResponse>(
             return await next(cancellationToken);
         }
 
-        if (cache.TryGetValue(cacheableQuery.CacheKey, out TResponse? cachedResponse))
+        var cacheKey = cacheableQuery.CacheTag is { } tag
+            ? $"{tag}:v{cacheVersionStore.GetVersion(tag)}:{cacheableQuery.CacheKey}"
+            : cacheableQuery.CacheKey;
+
+        if (cache.TryGetValue(cacheKey, out TResponse? cachedResponse))
         {
-            logger.LogInformation("Returning cached value for {CacheKey}", cacheableQuery.CacheKey);
+            logger.LogInformation("Returning cached value for {CacheKey}", cacheKey);
             return cachedResponse!;
         }
 
-        logger.LogInformation("Cache miss for {CacheKey}. Fetching from source.", cacheableQuery.CacheKey);
+        logger.LogInformation("Cache miss for {CacheKey}. Fetching from source.", cacheKey);
 
         var response = await next(cancellationToken);
 
@@ -37,7 +42,7 @@ public sealed class CachingBehavior<TRequest, TResponse>(
             AbsoluteExpirationRelativeToNow = cacheableQuery.AbsoluteExpirationRelativeToNow ?? TimeSpan.FromMinutes(15)
         };
 
-        cache.Set(cacheableQuery.CacheKey, response, options);
+        cache.Set(cacheKey, response, options);
 
         return response;
     }

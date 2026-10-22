@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Serilog;
+using System.Net;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,13 +52,20 @@ builder.Services.AddMemoryCache();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("ConfiguredOrigins", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
+        else if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+        }
     });
 });
 
@@ -98,15 +106,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler();
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
-});
+};
+
+foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+{
+    if (!IPAddress.TryParse(proxy, out var address))
+        throw new InvalidOperationException($"Invalid forwarded proxy IP address: {proxy}");
+
+    forwardedHeadersOptions.KnownProxies.Add(address);
+}
+
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("ConfiguredOrigins");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

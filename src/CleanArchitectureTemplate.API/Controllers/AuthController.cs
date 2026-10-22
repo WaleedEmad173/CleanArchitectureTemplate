@@ -33,10 +33,12 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
         FromResult(await Mediator.Send(new LoginCommand(dto)));
 
     [HttpPost("refresh")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshRequestDto dto) =>
         FromResult(await Mediator.Send(new RefreshTokenCommand(dto)));
 
     [HttpPost("logout")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto) =>
         FromResult(await Mediator.Send(new LogoutCommand(dto)));
 
@@ -52,6 +54,7 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
 
     [HttpPost("change-password")]
     [Authorize]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto) =>
         FromResult(await Mediator.Send(new ChangePasswordCommand(dto)));
 

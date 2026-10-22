@@ -29,6 +29,31 @@ public sealed class IdentityService(
         return user is null ? null : Map(user);
     }
 
+    public async Task<IdentityUserModel?> GetByGoogleSubjectAsync(
+        string subject,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByLoginAsync("Google", subject);
+        return user is null ? null : Map(user);
+    }
+
+    public async Task LinkGoogleLoginAsync(
+        int userId,
+        string subject,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            throw new NotFoundException("User not found.");
+
+        var result = await userManager.AddLoginAsync(
+            user,
+            new UserLoginInfo("Google", subject, "Google"));
+
+        if (!result.Succeeded)
+            throw new ConflictException(string.Join(" | ", result.Errors.Select(error => error.Description)));
+    }
+
     public Task<bool> EmailExistsAsync(
         string email,
         CancellationToken cancellationToken = default) =>

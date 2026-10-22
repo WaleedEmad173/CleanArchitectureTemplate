@@ -16,6 +16,15 @@ public interface IIdentityService
         string email,
         CancellationToken cancellationToken = default);
 
+    Task<IdentityUserModel?> GetByGoogleSubjectAsync(
+        string subject,
+        CancellationToken cancellationToken = default);
+
+    Task LinkGoogleLoginAsync(
+        int userId,
+        string subject,
+        CancellationToken cancellationToken = default);
+
     Task<bool> EmailExistsAsync(
         string email,
         CancellationToken cancellationToken = default);
