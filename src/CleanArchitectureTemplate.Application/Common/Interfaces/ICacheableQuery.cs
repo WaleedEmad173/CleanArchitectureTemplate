@@ -4,4 +4,5 @@ public interface ICacheableQuery
 {
     string CacheKey { get; }
     TimeSpan? SlidingExpiration { get; }
+    TimeSpan? AbsoluteExpirationRelativeToNow { get; }
 }

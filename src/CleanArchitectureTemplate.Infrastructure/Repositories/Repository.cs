@@ -34,23 +34,6 @@ public class Repository<TEntity>(DbContext context) : IRepository<TEntity>
             ? _set.CountAsync(cancellationToken)
             : _set.CountAsync(predicate, cancellationToken);
 
-    public async Task<(IReadOnlyList<TEntity> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber,
-        int pageSize,
-        CancellationToken cancellationToken = default)
-    {
-        var totalCount = await _set.CountAsync(cancellationToken);
-
-        var items = await _set
-            .AsNoTracking()
-            .OrderBy(x => x.Id)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        return (items, totalCount);
-    }
-
     public Task AddAsync(
         TEntity entity,
         CancellationToken cancellationToken = default) =>

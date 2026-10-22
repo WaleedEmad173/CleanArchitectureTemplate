@@ -44,6 +44,9 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             BadRequestException ex =>
                 (StatusCodes.Status400BadRequest, ex.Message, null),
 
+            ArgumentException ex =>
+                (StatusCodes.Status400BadRequest, ex.Message, null),
+
             UnauthorizedException ex =>
                 (StatusCodes.Status401Unauthorized, ex.Message, null),
 

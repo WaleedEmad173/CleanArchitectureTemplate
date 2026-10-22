@@ -1,4 +1,5 @@
 using CleanArchitectureTemplate.Application.Common.Pagination;
+using CleanArchitectureTemplate.Application.Common.Querying;
 using CleanArchitectureTemplate.Application.Features.Products.DTOs;
 using CleanArchitectureTemplate.Domain.Entities;
 using CleanArchitectureTemplate.Domain.UnitOfWork;
@@ -10,24 +11,23 @@ namespace CleanArchitectureTemplate.Application.Features.Products.Queries.GetAll
 public sealed class GetProductsHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<GetProductsQuery, PagedResult<ProductDto>>
 {
-    public async Task<PagedResult<ProductDto>> Handle(
-        GetProductsQuery request,
-        CancellationToken cancellationToken)
+    public Task<PagedResult<ProductDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
     {
         var p = request.Params;
 
-        return await unitOfWork.Products
-            .Query()
+        return unitOfWork.Products.Query()
             .AsNoTracking()
+            .Search(p.Search, nameof(Product.Name))
             .Filter(p.MinPrice, x => x.Price >= p.MinPrice)
             .Filter(p.MaxPrice, x => x.Price <= p.MaxPrice)
-            .Filter(p.InStockOnly == true, x => x.Stock > 0)
-            .Search(p.Search, x => x.Name)
-            .Sort(p.SortBy, p.IsDescending, defaultProperty: nameof(Product.Id))
-            .ToPagedResultAsync(
-                p.PageNumber,
-                p.PageSize,
-                x => new ProductDto(x.Id, x.Name, x.Price, x.Stock),
-                cancellationToken);
+            .WhereIf(p.InStockOnly == true, x => x.Stock > 0)
+            .Sort(
+                p.SortBy,
+                p.SortDescending,
+                nameof(Product.Id),
+                nameof(Product.Name),
+                nameof(Product.Price),
+                nameof(Product.Stock))
+            .ToPagedResultAsync(p.PageNumber, p.PageSize, x => new ProductDto(x.Id, x.Name, x.Price, x.Stock), cancellationToken);
     }
 }

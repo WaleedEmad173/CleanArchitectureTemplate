@@ -36,7 +36,6 @@ public sealed class AuditingInterceptor(ICurrentUserService currentUserService) 
             }
             else if (entry.State == EntityState.Deleted)
             {
-                // Soft delete
                 entry.State = EntityState.Modified;
                 entry.Entity.IsDeleted = true;
                 entry.Entity.DeletedAtUtc = utcNow;

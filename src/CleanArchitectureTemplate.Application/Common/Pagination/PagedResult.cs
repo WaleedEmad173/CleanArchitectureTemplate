@@ -1,22 +1,24 @@
 namespace CleanArchitectureTemplate.Application.Common.Pagination;
 
-public sealed class PagedResult<T>
+public sealed record PagedResult<T>(
+    IReadOnlyList<T> Items,
+    PaginationMeta Meta)
 {
-    public IReadOnlyList<T> Items { get; init; } = [];
-    public PaginationMeta Meta { get; init; } = default!;
-
-    public PagedResult() { }
-
-    public PagedResult(IReadOnlyList<T> items, PaginationMeta meta)
+    public static PagedResult<T> Create(
+        IReadOnlyList<T> items,
+        int totalCount,
+        int pageNumber,
+        int pageSize)
     {
-        Items = items;
-        Meta = meta;
-    }
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentOutOfRangeException.ThrowIfNegative(totalCount);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
 
-    public PagedResult(IReadOnlyList<T> items, int totalCount, int pageNumber, int pageSize)
-    {
-        Items = items;
-        var totalPages = pageSize > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 0;
-        Meta = new PaginationMeta(pageNumber, pageSize, totalCount, totalPages);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        return new PagedResult<T>(
+            items,
+            new PaginationMeta(pageNumber, pageSize, totalCount, totalPages));
     }
 }

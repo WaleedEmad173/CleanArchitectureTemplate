@@ -18,7 +18,7 @@ public sealed class CachingBehavior<TRequest, TResponse>(
     {
         if (request is not ICacheableQuery cacheableQuery)
         {
-            return await next();
+            return await next(cancellationToken);
         }
 
         if (cache.TryGetValue(cacheableQuery.CacheKey, out TResponse? cachedResponse))
@@ -28,12 +28,13 @@ public sealed class CachingBehavior<TRequest, TResponse>(
         }
 
         logger.LogInformation("Cache miss for {CacheKey}. Fetching from source.", cacheableQuery.CacheKey);
-        
-        var response = await next();
+
+        var response = await next(cancellationToken);
 
         var options = new MemoryCacheEntryOptions
         {
-            SlidingExpiration = cacheableQuery.SlidingExpiration ?? TimeSpan.FromMinutes(10)
+            SlidingExpiration = cacheableQuery.SlidingExpiration ?? TimeSpan.FromMinutes(5),
+            AbsoluteExpirationRelativeToNow = cacheableQuery.AbsoluteExpirationRelativeToNow ?? TimeSpan.FromMinutes(15)
         };
 
         cache.Set(cacheableQuery.CacheKey, response, options);
