@@ -1,6 +1,4 @@
 using CleanArchitectureTemplate.Application.Common.Interfaces;
-using CleanArchitectureTemplate.Application.Exceptions;
-using CleanArchitectureTemplate.Domain.Entities;
 using CleanArchitectureTemplate.Domain.UnitOfWork;
 using MediatR;
 
@@ -24,11 +22,8 @@ public sealed class LogoutHandler(
             return false;
 
         if (stored.RevokedAtUtc is null)
-        {
-            stored.RevokedAtUtc = DateTime.UtcNow;
-            unitOfWork.RefreshTokens.Update(stored);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-        }
+            await unitOfWork.RefreshTokens.TryRevokeActiveAsync(
+                stored.Id, stored.UserId, DateTime.UtcNow, cancellationToken);
 
         return true;
     }

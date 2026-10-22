@@ -1,11 +1,12 @@
 using CleanArchitectureTemplate.Application.Features.Products.DTOs;
+using CleanArchitectureTemplate.Application.Common.Interfaces;
 using CleanArchitectureTemplate.Domain.Entities;
 using CleanArchitectureTemplate.Domain.UnitOfWork;
 using MediatR;
 
 namespace CleanArchitectureTemplate.Application.Features.Products.Commands.Create;
 
-public sealed class CreateProductHandler(IUnitOfWork unitOfWork)
+public sealed class CreateProductHandler(IUnitOfWork unitOfWork, ICacheVersionStore cacheVersionStore)
     : IRequestHandler<CreateProductCommand, ProductDto>
 {
     public async Task<ProductDto> Handle(
@@ -23,6 +24,7 @@ public sealed class CreateProductHandler(IUnitOfWork unitOfWork)
             .AddAsync(product, cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        cacheVersionStore.Invalidate("ProductsList");
 
         return new ProductDto(
             product.Id,

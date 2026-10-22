@@ -1,12 +1,19 @@
 namespace CleanArchitectureTemplate.Application.Common.Pagination;
 
-public sealed class PaginationParams
+public class PaginationParams
 {
-    private const int MaxPageSize = 100;
+    public const int MaxPageSize = 100;
+    public const int DefaultPageSize = 10;
+    public const int DefaultPageNumber = 1;
 
-    public int PageNumber { get; init; } = 1;
+    private int _pageNumber = DefaultPageNumber;
+    private int _pageSize = DefaultPageSize;
 
-    private int _pageSize = 10;
+    public int PageNumber
+    {
+        get => _pageNumber;
+        init => _pageNumber = Math.Max(1, value);
+    }
 
     public int PageSize
     {

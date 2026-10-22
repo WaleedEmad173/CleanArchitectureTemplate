@@ -26,38 +26,49 @@ public sealed class RefreshTokenHandler(
         if (stored is null || !stored.IsActive)
             throw new UnauthorizedException("Refresh token is invalid or expired.");
 
-        var user = await identityService.GetByIdAsync(
-            stored.UserId, cancellationToken);
-
-        if (user is null)
-            throw new UnauthorizedException("User no longer exists.");
-
-        stored.RevokedAtUtc = DateTime.UtcNow;
-        unitOfWork.RefreshTokens.Update(stored);
-
-        var roles = await identityService.GetRolesAsync(user.Id, cancellationToken);
-
-        var access = await jwtService.CreateAccessTokenAsync(
-            user.Id, user.Email, user.UserName, user.FullName, roles, cancellationToken);
-
-        var rawRefreshToken = tokenGenerator.GenerateRefreshToken();
-
-        var replacement = new RefreshTokenEntity
+        var now = DateTime.UtcNow;
+        await unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
         {
-            UserId = user.Id,
-            TokenHash = tokenGenerator.HashToken(rawRefreshToken),
-            ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
-        };
+            if (!await unitOfWork.RefreshTokens.TryRevokeActiveAsync(stored.Id, stored.UserId, now, cancellationToken))
+                throw new UnauthorizedException("Refresh token is invalid or expired.");
 
-        await unitOfWork.RefreshTokens
-            .AddAsync(replacement, cancellationToken);
+            var user = await identityService.GetByIdAsync(
+                stored.UserId, cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            if (user is null)
+                throw new UnauthorizedException("User no longer exists.");
 
-        return new AuthResponseDto(
-            access.AccessToken,
-            access.ExpiresAtUtc,
-            rawRefreshToken,
-            replacement.ExpiresAtUtc);
+            var roles = await identityService.GetRolesAsync(user.Id, cancellationToken);
+
+            var access = await jwtService.CreateAccessTokenAsync(
+                user.Id, user.Email, user.UserName, user.FullName, roles, cancellationToken);
+
+            var rawRefreshToken = tokenGenerator.GenerateRefreshToken();
+
+            var replacement = new RefreshTokenEntity
+            {
+                UserId = user.Id,
+                TokenHash = tokenGenerator.HashToken(rawRefreshToken),
+                ExpiresAtUtc = now.AddDays(14)
+            };
+
+            await unitOfWork.RefreshTokens
+                .AddAsync(replacement, cancellationToken);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.CommitTransactionAsync(cancellationToken);
+
+            return new AuthResponseDto(
+                access.AccessToken,
+                access.ExpiresAtUtc,
+                rawRefreshToken,
+                replacement.ExpiresAtUtc);
+        }
+        catch
+        {
+            await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            throw;
+        }
     }
 }

@@ -25,19 +25,54 @@ public sealed class IdentityService(
         string email,
         CancellationToken cancellationToken = default)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        var user = await userManager.FindByEmailAsync(email.Trim());
         return user is null ? null : Map(user);
+    }
+
+    public async Task<IdentityUserModel?> GetByGoogleSubjectAsync(
+        string subject,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByLoginAsync("Google", subject);
+        return user is null ? null : Map(user);
+    }
+
+    public async Task LinkGoogleLoginAsync(
+        int userId,
+        string subject,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            throw new NotFoundException("User not found.");
+
+        var result = await userManager.AddLoginAsync(
+            user,
+            new UserLoginInfo("Google", subject, "Google"));
+
+        if (!result.Succeeded)
+            throw new ConflictException(string.Join(" | ", result.Errors.Select(error => error.Description)));
     }
 
     public Task<bool> EmailExistsAsync(
         string email,
-        CancellationToken cancellationToken = default) =>
-        userManager.Users.AnyAsync(x => x.Email == email, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = userManager.NormalizeEmail(email.Trim());
+        return userManager.Users.AnyAsync(
+            user => user.NormalizedEmail == normalizedEmail,
+            cancellationToken);
+    }
 
     public Task<bool> UserNameExistsAsync(
         string userName,
-        CancellationToken cancellationToken = default) =>
-        userManager.Users.AnyAsync(x => x.UserName == userName, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedUserName = userManager.NormalizeName(userName.Trim());
+        return userManager.Users.AnyAsync(
+            user => user.NormalizedUserName == normalizedUserName,
+            cancellationToken);
+    }
 
     public async Task<string> GeneratePasswordResetTokenAsync(
         int userId,
@@ -63,13 +98,22 @@ public sealed class IdentityService(
             UserName = userName.Trim(),
             Email = email.Trim(),
             EmailConfirmed = true,
+            LockoutEnabled = true,
         };
 
         var result = await userManager.CreateAsync(user, password);
 
         if (!result.Succeeded)
+        {
+            if (result.Errors.Any(error =>
+                    error.Code is "DuplicateEmail" or "DuplicateUserName"))
+            {
+                throw new ConflictException("An account with this email already exists.");
+            }
+
             throw new BadRequestException(
                 string.Join(" | ", result.Errors.Select(x => x.Description)));
+        }
 
         if (!await roleManager.RoleExistsAsync("User"))
         {
@@ -94,9 +138,28 @@ public sealed class IdentityService(
         CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return false;
 
-        return user is not null &&
-               await userManager.CheckPasswordAsync(user, password);
+        if (!user.LockoutEnabled)
+        {
+            var lockoutResult = await userManager.SetLockoutEnabledAsync(user, true);
+            if (!lockoutResult.Succeeded)
+                throw new InvalidOperationException(string.Join(" | ", lockoutResult.Errors.Select(error => error.Description)));
+        }
+
+        if (await userManager.IsLockedOutAsync(user))
+            return false;
+
+        if (!await userManager.CheckPasswordAsync(user, password))
+        {
+            await userManager.AccessFailedAsync(user);
+            return false;
+        }
+
+        if (user.AccessFailedCount > 0)
+            await userManager.ResetAccessFailedCountAsync(user);
+        return true;
     }
 
     public async Task<IReadOnlyCollection<string>> GetRolesAsync(
@@ -171,7 +234,7 @@ public sealed class IdentityService(
     {
         var user = await userManager.FindByEmailAsync(email);
         if (user == null)
-            throw new NotFoundException("User not found.");
+            throw new BadRequestException("Invalid or expired password reset token.");
 
         if (newPassword != confirmPassword)
             throw new BadRequestException("Passwords do not match.");
@@ -180,6 +243,9 @@ public sealed class IdentityService(
 
         if (!result.Succeeded)
         {
+            if (result.Errors.Any(error => error.Code == "InvalidToken"))
+                throw new BadRequestException("Invalid or expired password reset token.");
+
             var failures = result.Errors.Select(e =>
                 new FluentValidation.Results.ValidationFailure(e.Code, e.Description));
 

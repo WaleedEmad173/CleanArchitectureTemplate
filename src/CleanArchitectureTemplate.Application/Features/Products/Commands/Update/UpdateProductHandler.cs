@@ -1,4 +1,5 @@
 using CleanArchitectureTemplate.Application.Exceptions;
+using CleanArchitectureTemplate.Application.Common.Interfaces;
 using CleanArchitectureTemplate.Application.Features.Products.DTOs;
 using CleanArchitectureTemplate.Domain.Entities;
 using CleanArchitectureTemplate.Domain.UnitOfWork;
@@ -6,7 +7,7 @@ using MediatR;
 
 namespace CleanArchitectureTemplate.Application.Features.Products.Commands.Update;
 
-public sealed class UpdateProductHandler(IUnitOfWork unitOfWork)
+public sealed class UpdateProductHandler(IUnitOfWork unitOfWork, ICacheVersionStore cacheVersionStore)
     : IRequestHandler<UpdateProductCommand, ProductDto>
 {
     public async Task<ProductDto> Handle(
@@ -20,10 +21,10 @@ public sealed class UpdateProductHandler(IUnitOfWork unitOfWork)
         product.Name = request.Request.Name.Trim();
         product.Price = request.Request.Price;
         product.Stock = request.Request.Stock;
-        product.UpdatedAtUtc = DateTime.UtcNow;
 
         unitOfWork.Products.Update(product);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        cacheVersionStore.Invalidate("ProductsList");
 
         return new ProductDto(
             product.Id,

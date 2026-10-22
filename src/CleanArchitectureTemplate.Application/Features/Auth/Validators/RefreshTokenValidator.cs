@@ -8,6 +8,7 @@ public sealed class RefreshTokenValidator : AbstractValidator<RefreshTokenComman
     public RefreshTokenValidator()
     {
         RuleFor(x => x.Request.RefreshToken)
-            .NotEmpty();
+            .NotEmpty()
+            .MaximumLength(256);
     }
 }

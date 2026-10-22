@@ -10,8 +10,6 @@ public class Repository<TEntity>(DbContext context) : IRepository<TEntity>
 {
     private readonly DbSet<TEntity> _set = context.Set<TEntity>();
 
-    public IQueryable<TEntity> Query() => _set;
-
     public Task<TEntity?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default) =>
@@ -33,23 +31,6 @@ public class Repository<TEntity>(DbContext context) : IRepository<TEntity>
         predicate is null
             ? _set.CountAsync(cancellationToken)
             : _set.CountAsync(predicate, cancellationToken);
-
-    public async Task<(IReadOnlyList<TEntity> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber,
-        int pageSize,
-        CancellationToken cancellationToken = default)
-    {
-        var totalCount = await _set.CountAsync(cancellationToken);
-
-        var items = await _set
-            .AsNoTracking()
-            .OrderBy(x => x.Id)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        return (items, totalCount);
-    }
 
     public Task AddAsync(
         TEntity entity,

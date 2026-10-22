@@ -8,13 +8,19 @@ public sealed class RegisterValidator : AbstractValidator<RegisterCommand>
     public RegisterValidator()
     {
         RuleFor(x => x.Request.FullName)
-            .NotEmpty().MaximumLength(100);
+            .NotEmpty()
+            .Must(name => !string.IsNullOrWhiteSpace(name))
+            .MaximumLength(100);
 
         RuleFor(x => x.Request.Email)
             .NotEmpty().EmailAddress().MaximumLength(256);
 
         RuleFor(x => x.Request.Password)
             .NotEmpty().MinimumLength(8).MaximumLength(100);
+
+        RuleFor(x => x.Request.OtpCode)
+            .Matches("^\\d{6}$")
+            .WithMessage("Verification code must contain exactly 6 digits.");
 
         RuleFor(x => x.Request.ConfirmPassword)
             .Equal(x => x.Request.Password)

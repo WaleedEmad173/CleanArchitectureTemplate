@@ -20,7 +20,7 @@ namespace CleanArchitectureTemplate.Application.Features.Auth.Commands.ForgetPas
             var token = await identityService.GeneratePasswordResetTokenAsync(user.Id, cancellationToken);
 
             await emailService.SendEmailAsync(user.Email, "Password Reset",
-            $"Your password reset token is: {token}");
+            $"Your password reset token is: {token}", cancellationToken);
 
             return true;
         }

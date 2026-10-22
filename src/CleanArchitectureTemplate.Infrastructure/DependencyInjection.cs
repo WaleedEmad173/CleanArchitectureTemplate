@@ -1,8 +1,10 @@
 using CleanArchitectureTemplate.Application.Common.Interfaces;
+using CleanArchitectureTemplate.Application.Features.Products.Queries.GetAll;
 using CleanArchitectureTemplate.Domain.RepositoryInterfaces;
 using CleanArchitectureTemplate.Domain.UnitOfWork;
 using CleanArchitectureTemplate.Infrastructure.Context;
 using CleanArchitectureTemplate.Infrastructure.Identity;
+using CleanArchitectureTemplate.Infrastructure.Queries;
 using CleanArchitectureTemplate.Infrastructure.Repositories;
 using CleanArchitectureTemplate.Infrastructure.Services;
 using CleanArchitectureTemplate.Infrastructure.Settings;
@@ -22,16 +24,23 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:DefaultConnection is missing.");
+
         services.AddScoped<CleanArchitectureTemplate.Infrastructure.Context.Interceptors.AuditingInterceptor>();
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"))
+                connectionString)
                 .AddInterceptors(sp.GetRequiredService<CleanArchitectureTemplate.Infrastructure.Context.Interceptors.AuditingInterceptor>()));
 
         services.AddIdentityCore<ApplicationUser>(options =>
         {
             options.User.RequireUniqueEmail = true;
+            options.Lockout.AllowedForNewUsers = true;
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 
             options.Password.RequiredLength = 8;
             options.Password.RequireDigit = true;
@@ -47,6 +56,18 @@ public static class DependencyInjection
         var jwtSection = configuration.GetSection("Jwt");
         var signingKey = jwtSection["Key"]
             ?? throw new InvalidOperationException("Jwt:Key is missing.");
+        if (string.IsNullOrWhiteSpace(signingKey) ||
+            signingKey.Contains("CHANGE_THIS", StringComparison.OrdinalIgnoreCase) ||
+            Encoding.UTF8.GetByteCount(signingKey) < 32)
+            throw new InvalidOperationException("Jwt:Key must be a private secret of at least 32 bytes.");
+
+        var issuer = jwtSection["Issuer"];
+        var audience = jwtSection["Audience"];
+        if (string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(audience))
+            throw new InvalidOperationException("Jwt:Issuer and Jwt:Audience must be configured.");
+
+        if (!int.TryParse(jwtSection["ExpireMinutes"], out var tokenLifetimeMinutes) || tokenLifetimeMinutes <= 0)
+            throw new InvalidOperationException("Jwt:ExpireMinutes must be a positive integer.");
 
         services.AddAuthentication(options =>
         {
@@ -61,8 +82,8 @@ public static class DependencyInjection
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSection["Issuer"],
-                ValidAudience = jwtSection["Audience"],
+                ValidIssuer = issuer,
+                ValidAudience = audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
                 ClockSkew = TimeSpan.FromSeconds(30)
             };
@@ -77,12 +98,14 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<ITokenGenerator, TokenGenerator>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.AddTransient<IEmailService, EmailService>();
+        services.AddScoped<IProductQueryService, ProductQueryService>();
 
         return services;
     }
