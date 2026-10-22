@@ -50,6 +50,9 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             UnauthorizedException ex =>
                 (StatusCodes.Status401Unauthorized, ex.Message, null),
 
+            UnauthorizedAccessException ex =>
+                (StatusCodes.Status401Unauthorized, ex.Message, null),
+
             ForbiddenException ex =>
                 (StatusCodes.Status403Forbidden, ex.Message, null),
 

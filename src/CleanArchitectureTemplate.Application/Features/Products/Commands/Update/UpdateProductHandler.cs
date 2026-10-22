@@ -20,7 +20,6 @@ public sealed class UpdateProductHandler(IUnitOfWork unitOfWork)
         product.Name = request.Request.Name.Trim();
         product.Price = request.Request.Price;
         product.Stock = request.Request.Stock;
-        product.UpdatedAtUtc = DateTime.UtcNow;
 
         unitOfWork.Products.Update(product);
         await unitOfWork.SaveChangesAsync(cancellationToken);

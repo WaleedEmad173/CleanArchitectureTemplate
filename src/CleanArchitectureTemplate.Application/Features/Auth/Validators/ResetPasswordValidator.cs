@@ -1,7 +1,9 @@
-﻿using CleanArchitectureTemplate.Application.Features.Auth.Commands.ResetPassword;
+using CleanArchitectureTemplate.Application.Features.Auth.Commands.ResetPassword;
 using FluentValidation;
 
-public class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordCommand>
+namespace CleanArchitectureTemplate.Application.Features.Auth.Validators;
+
+public sealed class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordCommand>
 {
     public ResetPasswordCommandValidator()
     {
@@ -14,7 +16,7 @@ public class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordComm
 
         RuleFor(x => x.Request.NewPassword)
             .NotEmpty().WithMessage("New password is required.")
-            .MinimumLength(6).WithMessage("Password must be at least 6 characters long.");
+            .MinimumLength(8).WithMessage("Password must be at least 8 characters long.");
 
         RuleFor(x => x.Request.ConfirmPassword)
             .Equal(x => x.Request.NewPassword).WithMessage("Passwords do not match.");

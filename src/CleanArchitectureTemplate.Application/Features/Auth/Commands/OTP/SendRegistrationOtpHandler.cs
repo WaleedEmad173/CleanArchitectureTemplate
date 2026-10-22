@@ -1,4 +1,4 @@
-﻿using CleanArchitectureTemplate.Application.Common.Interfaces;
+using CleanArchitectureTemplate.Application.Common.Interfaces;
 using CleanArchitectureTemplate.Application.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Caching.Memory;
@@ -19,7 +19,7 @@ namespace CleanArchitectureTemplate.Application.Features.Auth.Commands.OTP
                 throw new BadRequestException("This email is already registered.");
             }
 
-            var otpCode = new Random().Next(100000, 999999).ToString();
+            var otpCode = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
             var cacheKey = $"RegistrationOTP_{request.Request.Email.Trim().ToLower()}";
 
             memoryCache.Set(cacheKey, otpCode, TimeSpan.FromMinutes(5));

@@ -7,14 +7,33 @@ namespace CleanArchitectureTemplate.Infrastructure.Context.Interceptors;
 
 public sealed class AuditingInterceptor(ICurrentUserService currentUserService) : SaveChangesInterceptor
 {
+    public override InterceptionResult<int> SavingChanges(
+        DbContextEventData eventData,
+        InterceptionResult<int> result)
+    {
+        if (eventData.Context is not null)
+        {
+            UpdateAuditFields(eventData.Context);
+        }
+
+        return base.SavingChanges(eventData, result);
+    }
+
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        var context = eventData.Context;
-        if (context is null) return base.SavingChangesAsync(eventData, result, cancellationToken);
+        if (eventData.Context is not null)
+        {
+            UpdateAuditFields(eventData.Context);
+        }
 
+        return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private void UpdateAuditFields(DbContext context)
+    {
         var entries = context.ChangeTracker
             .Entries<BaseEntity>()
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
@@ -42,7 +61,5 @@ public sealed class AuditingInterceptor(ICurrentUserService currentUserService) 
                 entry.Entity.DeletedBy = userId;
             }
         }
-
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }

@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace Plantera.API.Controllers;
+namespace CleanArchitectureTemplate.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -24,12 +24,12 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
 {
     [HttpPost("register")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> Register(RegisterRequestDto dto) =>
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto) =>
         FromResult(await Mediator.Send(new RegisterCommand(dto)), statusCode: StatusCodes.Status201Created);
 
     [HttpPost("login")]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> Login(LoginRequestDto dto) =>
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto) =>
         FromResult(await Mediator.Send(new LoginCommand(dto)));
 
     [HttpPost("refresh")]
@@ -56,12 +56,14 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
         FromResult(await Mediator.Send(new ChangePasswordCommand(dto)));
 
     [HttpPost("forget-password")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequestDto dto) =>
         FromResult(await Mediator.Send(new ForgetPasswordCommand(dto)));
 
     [HttpPost("reset-password")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto) =>
-    FromResult(await Mediator.Send(new ResetPasswordCommand(dto)));
+        FromResult(await Mediator.Send(new ResetPasswordCommand(dto)));
 
     [HttpGet("me")]
     [Authorize]
@@ -70,7 +72,6 @@ public class AuthController(IMediator mediator) : BaseController(mediator)
 
     [HttpPut("me")]
     [Authorize]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UpdateProfile([FromForm] UpdateProfileDto dto) =>
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto) =>
         FromResult(await Mediator.Send(new UpdateProfileCommand(dto)));
 }

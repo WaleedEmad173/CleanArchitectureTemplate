@@ -25,7 +25,7 @@ public sealed class ProductController(IMediator mediator) : BaseController(media
 
     [Authorize]
     [HttpPost]
-    public async Task<IActionResult> Create(CreateProductDto request) =>
+    public async Task<IActionResult> Create([FromBody] CreateProductDto request) =>
         FromResult(await Mediator.Send(new CreateProductCommand(request)), "Product created successfully.", StatusCodes.Status201Created);
 
     [Authorize]
@@ -38,4 +38,3 @@ public sealed class ProductController(IMediator mediator) : BaseController(media
     public async Task<IActionResult> Delete(int id) =>
         FromResult(await Mediator.Send(new DeleteProductCommand(id)), "Product deleted successfully.");
 }
-
